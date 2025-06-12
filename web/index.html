@@ -69,32 +69,35 @@
         section.className = "bg-gray-800 p-4 rounded-lg";
         section.innerHTML = `
           <summary class="cursor-pointer font-semibold text-lg text-teal-400">
-            ${host.host} – OS: ${host.os}
+            ${host.host} – OS: ${host.os || "Desconhecido"}
           </summary>
           <div class="mt-2 text-sm text-gray-100 space-y-2">
             <h4 class="font-semibold">Serviços e Portas</h4>
             <ul class="list-disc list-inside space-y-1">
-              ${host.ports.map(port => `
-                <li>
-                  <strong>Porta ${port.port} (${port.service})</strong>: ${port.version}<br>
-                  <strong>Protocolo:</strong> ${port.protocol}<br>
-                  <strong>Tipo de Dispositivo:</strong> ${port.analysis.tipo_dispositivo}<br>
-                  <strong>Risco Geral:</strong> ${port.analysis.risco_geral}<br>
-                  <strong>Justificativa:</strong> ${port.analysis.justificativa}<br>
-                  <strong>Insights:</strong> ${port.analysis.insights}<br>
+              ${host.ports.map(port => {
+                const analysis = port.analysis || {};
+                return `
+                  <li>
+                    <strong>Porta ${port.port} (${port.service})</strong>: ${port.version || "Desconhecido"}<br>
+                    <strong>Protocolo:</strong> ${port.protocol || "Desconhecido"}<br>
+                    <strong>Tipo de Dispositivo:</strong> ${analysis.tipo_dispositivo || "Desconhecido"}<br>
+                    <strong>Risco Geral:</strong> ${analysis.risco_geral || "Desconhecido"}<br>
+                    <strong>Justificativa:</strong> ${analysis.justificativa || "Desconhecida"}<br>
+                    <strong>Insights:</strong> ${analysis.insights || "Nenhum insight identificado"}<br>
 
-                  <h4 class="mt-2 font-semibold">CVEs Críticos</h4>
-                  ${port.analysis.CVEs_criticos.length > 0 ? `
-                    <ul class="list-disc list-inside text-red-400 space-y-1">
-                      ${port.analysis.CVEs_criticos.map(cve => `
-                        <li>
-                          <a href="${cve.link}" target="_blank" class="underline">${cve.cve}</a> – ${cve.descricao} (CVSS: ${cve.cvss})
-                        </li>
-                      `).join('')}
-                    </ul>
-                  ` : `<p class="text-gray-400 italic">Nenhuma CVE crítica identificada.</p>`}
-                </li>
-              `).join('')}
+                    <h4 class="mt-2 font-semibold">CVEs Críticos</h4>
+                    ${analysis.CVEs_criticos && analysis.CVEs_criticos.length > 0 ? `
+                      <ul class="list-disc list-inside text-red-400 space-y-1">
+                        ${analysis.CVEs_criticos.map(cve => `
+                          <li>
+                            <a href="${cve.link}" target="_blank" class="underline">${cve.cve}</a> – ${cve.descricao} (CVSS: ${cve.cvss})
+                          </li>
+                        `).join('')}
+                      </ul>
+                    ` : `<p class="text-gray-400 italic">Nenhuma CVE crítica identificada.</p>`}
+                  </li>
+                `;
+              }).join('')}
             </ul>
           </div>
         `;
