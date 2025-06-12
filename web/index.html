@@ -160,7 +160,7 @@
 
       data.forEach(host => {
         const analysis = host.analysis || {};
-        const services = analysis.services || []; // Corrigido aqui, agora estamos acessando 'services'
+        const services = analysis.services || [];  // Corrigido para acessar 'services'
         
         const section = document.createElement("details");
         section.className = "bg-gray-800 p-4 rounded-lg";
@@ -172,20 +172,30 @@
             <p><strong>MAC:</strong> ${host.mac || "-"}</p>
             <p><strong>OS:</strong> ${host.os || "-"}</p>
 
+            <h4 class="mt-2 font-semibold">Serviços e Portas</h4>
+            <ul class="list-disc list-inside space-y-1">
+              ${services.map(service => `
+                <li>
+                  <strong>Porta ${service.port} (${service.service})</strong>: ${service.version}<br>
+                  <strong>Risco:</strong> ${service.analysis?.risco_geral || "Desconhecido"}<br>
+                  <strong>Insights:</strong> ${service.analysis?.insights || "Nenhum insight disponível"}
+                </li>
+              `).join('')}
+            </ul>
+
             <h4 class="mt-2 font-semibold">CVEs Críticos</h4>
             ${
-              services.length > 0 && services[0].analysis.CVEs_criticos.length > 0
+              services.some(service => service.analysis.CVEs_criticos.length > 0)
                 ? `<ul class="list-disc list-inside text-red-400 space-y-1">
-                    ${services[0].analysis.CVEs_criticos.map(cve => `
+                    ${services.map(service => service.analysis?.CVEs_criticos.map(cve => `
                       <li>
                         <a href="${cve.link}" target="_blank" class="underline">${cve.cve}</a> – ${cve.descricao} (CVSS: ${cve.cvss})
-                      </li>`).join("")}
+                      </li>
+                    `)).join('')}
                   </ul>`
                 : `<p class="text-gray-400 italic">Nenhuma CVE crítica identificada.</p>`
             }
 
-            <h4 class="mt-2 font-semibold">Insights</h4>
-            <p class="text-gray-400">${services.length > 0 ? services[0].analysis.insights : "Nenhum insight identificado."}</p>
           </div>
         `;
         resultDiv.appendChild(section);
