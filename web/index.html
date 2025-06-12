@@ -160,14 +160,14 @@
       resultDiv.innerHTML = "";
 
       data.forEach(host => {
-        const analysis = host.analysis || {};
-        const services = analysis.services || []; // Garantir que estamos acessando os serviços corretamente
+        const analysis = host.analysis || {}; // Acessando a análise
+        const ports = host.ports || []; // Acessando as portas
 
         const section = document.createElement("details");
         section.className = "bg-gray-800 p-4 rounded-lg";
         section.innerHTML = `
           <summary class="cursor-pointer font-semibold text-lg text-teal-400">
-            ${host.host} – Risco: ${services[0]?.analysis?.risco_geral || "?"}
+            ${host.host} – Risco: ${analysis.risco_geral || "?"}
           </summary>
           <div class="mt-2 text-sm text-gray-100 space-y-2">
             <p><strong>MAC:</strong> ${host.mac || "-"}</p>
@@ -175,26 +175,29 @@
 
             <h4 class="mt-2 font-semibold">Serviços e Portas</h4>
             <ul class="list-disc list-inside space-y-1">
-              ${services.map(service => `
+              ${ports.map(port => `
                 <li>
-                  <strong>Porta ${service.port} (${service.service})</strong>: ${service.version}<br>
-                  <strong>Risco:</strong> ${service.analysis?.risco_geral || "Desconhecido"}<br>
-                  <strong>Insights:</strong> ${service.analysis?.insights || "Nenhum insight disponível"}
+                  <strong>Porta ${port.port} (${port.service})</strong>: ${port.version}<br>
+                  <strong>Protocolo:</strong> ${port.protocol}<br>
                 </li>
               `).join('')}
             </ul>
 
+            <h4 class="mt-2 font-semibold">Análise de Risco</h4>
+            <p><strong>Risco Geral:</strong> ${analysis.risco_geral || "Desconhecido"}</p>
+            <p><strong>Justificativa:</strong> ${analysis.justificativa || "Nenhuma justificativa disponível"}</p>
+            <p><strong>Insights:</strong> ${analysis.insights || "Nenhum insight identificado"}</p>
+
             <h4 class="mt-2 font-semibold">CVEs Críticos</h4>
-            ${
-              services.some(service => service.analysis.CVEs_criticos.length > 0)
-                ? `<ul class="list-disc list-inside text-red-400 space-y-1">
-                    ${services.map(service => service.analysis?.CVEs_criticos.map(cve => `
-                      <li>
-                        <a href="${cve.link}" target="_blank" class="underline">${cve.cve}</a> – ${cve.descricao} (CVSS: ${cve.cvss})
-                      </li>
-                    `)).join('')}
-                  </ul>`
-                : `<p class="text-gray-400 italic">Nenhuma CVE crítica identificada.</p>`
+            ${analysis.CVEs_criticos && analysis.CVEs_criticos.length > 0
+              ? `<ul class="list-disc list-inside text-red-400 space-y-1">
+                  ${analysis.CVEs_criticos.map(cve => `
+                    <li>
+                      <a href="${cve.link}" target="_blank" class="underline">${cve.cve}</a> – ${cve.descricao} (CVSS: ${cve.cvss})
+                    </li>
+                  `).join('')}
+                </ul>`
+              : `<p class="text-gray-400 italic">Nenhuma CVE crítica identificada.</p>`
             }
 
           </div>
