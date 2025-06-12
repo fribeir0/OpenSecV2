@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>OpenSecAI Dashboard</title>
+</head>
+<body class="bg-gray-900 text-white p-6">
+  <div class="max-w-6xl mx-auto space-y-6">
+    <!-- TOPO -->
+    <div class="bg-gray-800 p-6 rounded-lg shadow-md">
+      <h1 class="text-3xl font-bold text-teal-400 mb-2">OpenSecAI</h1>
+      <p class="text-gray-300 mb-4">Scanner inteligente com análise de vulnerabilidades</p>
+      <div class="flex gap-2">
+        <input id="target" type="text" placeholder="Digite IP, domínio ou rede"
+          class="flex-1 px-4 py-2 rounded bg-gray-700 text-white focus:outline-none" />
+        <button id="scanBtn" class="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-black font-semibold rounded">
+          Iniciar Scan
+        </button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="hidden bg-gray-800 p-6 rounded-lg shadow-md">
+      <h2 class="text-2xl font-semibold mb-4">📊 Visão Geral</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Gráfico OS -->
+        <div class="bg-gray-900 p-4 rounded-lg shadow-md h-[350px]">
+          <h3 class="text-teal-300 text-sm mb-2 text-center font-semibold">Sistemas Operacionais</h3>
+          <div class="h-[300px] w-full">
+            <canvas id="chartOS" class="w-full h-full"></canvas>
+          </div>
+        </div>
+        <!-- Gráfico Dispositivos -->
+        <div class="bg-gray-900 p-4 rounded-lg shadow-md h-[350px]">
+          <h3 class="text-teal-300 text-sm mb-2 text-center font-semibold">Tipos de Dispositivo</h3>
+          <div class="h-[300px] w-full">
+            <canvas id="chartDevices" class="w-full h-full"></canvas>
+          </div>
+        </div>
+        <!-- Gráfico CVEs -->
+        <div class="bg-gray-900 p-4 rounded-lg shadow-md h-[350px]">
+          <h3 class="text-teal-300 text-sm mb-2 text-center font-semibold">CVEs Críticos</h3>
+          <div class="h-[300px] w-full">
+            <canvas id="chartCVEs" class="w-full h-full"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTADOS -->
+    <div id="result" class="space-y-4 hidden"></div>
+  </div>
+
+  <script>
+    const btn = document.getElementById("scanBtn");
+    const targetInput = document.getElementById("target");
+    const resultDiv = document.getElementById("result");
+    const dashboardDiv = document.getElementById("dashboard");
+
+    btn.addEventListener("click", () => {
+      const target = targetInput.value.trim();
+      if (!target) return alert("Informe um alvo válido.");
+
+      btn.disabled = true;
+      btn.textContent = "Analisando...";
+      resultDiv.innerHTML = "";
+      resultDiv.classList.add("hidden");
+      dashboardDiv.classList.add("hidden");
+
+      fetch("/recon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target })
+      })
+        .then(res => res.json())
+        .then(data => {
+          renderCharts(data);
+          renderResult(data);
+        })
+        .catch(err => {
+          resultDiv.innerHTML = `<div class="text-red-400">Erro: ${err.message}</div>`;
+          resultDiv.classList.remove("hidden");
+        })
+        .finally(() => {
+          btn.disabled = false;
+          btn.textContent = "Iniciar Scan";
+        });
+    });
+
+    function renderCharts(data) {
+      const osMap = {}, typeMap = {}, cveMap = {};
+
+      data.forEach(h => {
+        const os = (h.os || "Desconhecido").split(" ")[0];
+        osMap[os] = (osMap[os] || 0) + 1;
+
+        const tipo = h.analysis?.tipo_dispositivo || "Outro";
+        typeMap[tipo] = (typeMap[tipo] || 0) + 1;
+
+        (h.analysis?.CVEs_criticos || []).forEach(cve => {
+          cveMap[cve.cve] = (cveMap[cve.cve] || 0) + 1;
+        });
+      });
+
+      new Chart(document.getElementById("chartOS"), {
+        type: "doughnut",
+        data: {
+          labels: Object.keys(osMap),
+          datasets: [{ data: Object.values(osMap), label: "Sistemas" }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: "#fff" } } }
+        }
+      });
+
+      new Chart(document.getElementById("chartDevices"), {
+        type: "bar",
+        data: {
+          labels: Object.keys(typeMap),
+          datasets: [{ data: Object.values(typeMap), label: "Dispositivos", backgroundColor: "#14b8a6" }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#ccc" } },
+            y: { ticks: { color: "#ccc" } }
+          }
+        }
+      });
+
+      new Chart(document.getElementById("chartCVEs"), {
+        type: "bar",
+        data: {
+          labels: Object.keys(cveMap),
+          datasets: [{ data: Object.values(cveMap), label: "CVEs", backgroundColor: "#f87171" }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#ccc" } },
+            y: { ticks: { color: "#ccc" } }
+          }
+        }
+      });
+
+      dashboardDiv.classList.remove("hidden");
+    }
+
+    function renderResult(data) {
+      resultDiv.innerHTML = "";
+
+      data.forEach(host => {
+        const analysis = host.analysis || {};
+        const services = analysis.services || []; // Corrigido aqui, agora estamos acessando 'services'
+        
+        const section = document.createElement("details");
+        section.className = "bg-gray-800 p-4 rounded-lg";
+        section.innerHTML = `
+          <summary class="cursor-pointer font-semibold text-lg text-teal-400">
+            ${host.host} – Risco: ${services[0]?.analysis?.risco_geral || "?"}
+          </summary>
+          <div class="mt-2 text-sm text-gray-100 space-y-2">
+            <p><strong>MAC:</strong> ${host.mac || "-"}</p>
+            <p><strong>OS:</strong> ${host.os || "-"}</p>
+
+            <h4 class="mt-2 font-semibold">CVEs Críticos</h4>
+            ${
+              services.length > 0 && services[0].analysis.CVEs_criticos.length > 0
+                ? `<ul class="list-disc list-inside text-red-400 space-y-1">
+                    ${services[0].analysis.CVEs_criticos.map(cve => `
+                      <li>
+                        <a href="${cve.link}" target="_blank" class="underline">${cve.cve}</a> – ${cve.descricao} (CVSS: ${cve.cvss})
+                      </li>`).join("")}
+                  </ul>`
+                : `<p class="text-gray-400 italic">Nenhuma CVE crítica identificada.</p>`
+            }
+
+            <h4 class="mt-2 font-semibold">Insights</h4>
+            <p class="text-gray-400">${services.length > 0 ? services[0].analysis.insights : "Nenhum insight identificado."}</p>
+          </div>
+        `;
+        resultDiv.appendChild(section);
+      });
+
+      resultDiv.classList.remove("hidden");
+    }
+  </script>
+</body>
+</html>
