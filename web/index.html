@@ -65,57 +65,46 @@
       resultDiv.innerHTML = "";
       console.log('Renderizando resultados', data); // Verificando dados antes de renderizar
 
-      // Certifique-se de que os dados estão no formato correto
-      if (Array.isArray(data)) {
+      // Gambiarras: se data for um array, rende os hosts diretamente
+      if (data && data.length > 0) {
         data.forEach(host => {
           const analysis = host.analysis || {}; // Acessando a análise
           const ports = host.ports || []; // Acessando as portas
 
-          const section = document.createElement("details");
-          section.className = "bg-gray-800 p-4 rounded-lg";
-          section.innerHTML = `
-            <summary class="cursor-pointer font-semibold text-lg text-teal-400">
-              ${host.host} – Risco: ${analysis.risco_geral || "?"}
-            </summary>
-            <div class="mt-2 text-sm text-gray-100 space-y-2">
+          // Adicionando todas as informações para mostrar no DOM
+          resultDiv.innerHTML += `
+            <div class="bg-gray-800 p-4 rounded-lg mb-4">
+              <h3 class="text-teal-400 font-bold">${host.host} - Risco: ${analysis.risco_geral || "Desconhecido"}</h3>
               <p><strong>OS:</strong> ${host.os || "-"}</p>
 
-              <h4 class="mt-2 font-semibold">Serviços e Portas</h4>
-              <ul class="list-disc list-inside space-y-1">
+              <h4 class="mt-2">Serviços e Portas:</h4>
+              <ul class="list-disc ml-5">
                 ${ports.map(port => `
-                  <li>
-                    <strong>Porta ${port.port} (${port.service})</strong>: ${port.version}<br>
-                    <strong>Protocolo:</strong> ${port.protocol}<br>
-                  </li>
+                  <li><strong>Porta ${port.port} (${port.service})</strong> - Versão: ${port.version}, Protocolo: ${port.protocol}</li>
                 `).join('')}
               </ul>
 
-              <h4 class="mt-2 font-semibold">Análise de Risco</h4>
-              <p><strong>Risco Geral:</strong> ${analysis.risco_geral || "Desconhecido"}</p>
+              <h4 class="mt-2">Análise de Risco:</h4>
+              <p><strong>Risco:</strong> ${analysis.risco_geral || "Desconhecido"}</p>
               <p><strong>Justificativa:</strong> ${analysis.justificativa || "Nenhuma justificativa disponível"}</p>
               <p><strong>Insights:</strong> ${analysis.insights || "Nenhum insight identificado"}</p>
 
-              <h4 class="mt-2 font-semibold">CVEs Críticos</h4>
+              <h4 class="mt-2">CVEs Críticos:</h4>
               ${analysis.CVEs_criticos && analysis.CVEs_criticos.length > 0
-                ? `<ul class="list-disc list-inside text-red-400 space-y-1">
+                ? `<ul class="list-disc ml-5 text-red-400">
                     ${analysis.CVEs_criticos.map(cve => `
-                      <li>
-                        <a href="${cve.link}" target="_blank" class="underline">${cve.cve}</a> – ${cve.descricao} (CVSS: ${cve.cvss})
-                      </li>
+                      <li><a href="${cve.link}" target="_blank" class="underline">${cve.cve}</a> - ${cve.descricao} (CVSS: ${cve.cvss})</li>
                     `).join('')}
                   </ul>`
-                : `<p class="text-gray-400 italic">Nenhuma CVE crítica identificada.</p>`
+                : "<p class='text-gray-400 italic'>Nenhuma CVE crítica identificada.</p>"
               }
-
             </div>
           `;
-          resultDiv.appendChild(section);
         });
 
         resultDiv.classList.remove("hidden");
       } else {
-        resultDiv.innerHTML = "<div class='text-red-400'>Erro: Dados inválidos retornados do servidor.</div>";
-        resultDiv.classList.remove("hidden");
+        alert("Erro: Nenhum dado válido retornado do servidor.");
       }
     }
   </script>
