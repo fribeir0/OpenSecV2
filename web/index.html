@@ -63,49 +63,45 @@
 
     function renderResult(data) {
       resultDiv.innerHTML = "";
-      console.log('Renderizando resultados', data); // Verificando dados antes de renderizar
 
-      // Gambiarras: se data for um array, rende os hosts diretamente
-      if (data && data.length > 0) {
-        data.forEach(host => {
-          const analysis = host.analysis || {}; // Acessando a análise
-          const ports = host.ports || []; // Acessando as portas
+      data.forEach(host => {
+        const section = document.createElement("details");
+        section.className = "bg-gray-800 p-4 rounded-lg";
+        section.innerHTML = `
+          <summary class="cursor-pointer font-semibold text-lg text-teal-400">
+            ${host.host} – OS: ${host.os}
+          </summary>
+          <div class="mt-2 text-sm text-gray-100 space-y-2">
+            <h4 class="font-semibold">Serviços e Portas</h4>
+            <ul class="list-disc list-inside space-y-1">
+              ${host.ports.map(port => `
+                <li>
+                  <strong>Porta ${port.port} (${port.service})</strong>: ${port.version}<br>
+                  <strong>Protocolo:</strong> ${port.protocol}<br>
+                  <strong>Tipo de Dispositivo:</strong> ${port.analysis.tipo_dispositivo}<br>
+                  <strong>Risco Geral:</strong> ${port.analysis.risco_geral}<br>
+                  <strong>Justificativa:</strong> ${port.analysis.justificativa}<br>
+                  <strong>Insights:</strong> ${port.analysis.insights}<br>
 
-          // Adicionando todas as informações para mostrar no DOM
-          resultDiv.innerHTML += `
-            <div class="bg-gray-800 p-4 rounded-lg mb-4">
-              <h3 class="text-teal-400 font-bold">${host.host} - Risco: ${analysis.risco_geral || "Desconhecido"}</h3>
-              <p><strong>OS:</strong> ${host.os || "-"}</p>
+                  <h4 class="mt-2 font-semibold">CVEs Críticos</h4>
+                  ${port.analysis.CVEs_criticos.length > 0 ? `
+                    <ul class="list-disc list-inside text-red-400 space-y-1">
+                      ${port.analysis.CVEs_criticos.map(cve => `
+                        <li>
+                          <a href="${cve.link}" target="_blank" class="underline">${cve.cve}</a> – ${cve.descricao} (CVSS: ${cve.cvss})
+                        </li>
+                      `).join('')}
+                    </ul>
+                  ` : `<p class="text-gray-400 italic">Nenhuma CVE crítica identificada.</p>`}
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+        `;
+        resultDiv.appendChild(section);
+      });
 
-              <h4 class="mt-2">Serviços e Portas:</h4>
-              <ul class="list-disc ml-5">
-                ${ports.map(port => `
-                  <li><strong>Porta ${port.port} (${port.service})</strong> - Versão: ${port.version}, Protocolo: ${port.protocol}</li>
-                `).join('')}
-              </ul>
-
-              <h4 class="mt-2">Análise de Risco:</h4>
-              <p><strong>Risco:</strong> ${analysis.risco_geral || "Desconhecido"}</p>
-              <p><strong>Justificativa:</strong> ${analysis.justificativa || "Nenhuma justificativa disponível"}</p>
-              <p><strong>Insights:</strong> ${analysis.insights || "Nenhum insight identificado"}</p>
-
-              <h4 class="mt-2">CVEs Críticos:</h4>
-              ${analysis.CVEs_criticos && analysis.CVEs_criticos.length > 0
-                ? `<ul class="list-disc ml-5 text-red-400">
-                    ${analysis.CVEs_criticos.map(cve => `
-                      <li><a href="${cve.link}" target="_blank" class="underline">${cve.cve}</a> - ${cve.descricao} (CVSS: ${cve.cvss})</li>
-                    `).join('')}
-                  </ul>`
-                : "<p class='text-gray-400 italic'>Nenhuma CVE crítica identificada.</p>"
-              }
-            </div>
-          `;
-        });
-
-        resultDiv.classList.remove("hidden");
-      } else {
-        alert("Erro: Nenhum dado válido retornado do servidor.");
-      }
+      resultDiv.classList.remove("hidden");
     }
   </script>
 </body>
