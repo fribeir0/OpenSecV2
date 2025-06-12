@@ -22,34 +22,6 @@
       </div>
     </div>
 
-    <!-- DASHBOARD -->
-    <div id="dashboard" class="hidden bg-gray-800 p-6 rounded-lg shadow-md">
-      <h2 class="text-2xl font-semibold mb-4">📊 Visão Geral</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Gráfico OS -->
-        <div class="bg-gray-900 p-4 rounded-lg shadow-md h-[350px]">
-          <h3 class="text-teal-300 text-sm mb-2 text-center font-semibold">Sistemas Operacionais</h3>
-          <div class="h-[300px] w-full">
-            <canvas id="chartOS" class="w-full h-full"></canvas>
-          </div>
-        </div>
-        <!-- Gráfico Dispositivos -->
-        <div class="bg-gray-900 p-4 rounded-lg shadow-md h-[350px]">
-          <h3 class="text-teal-300 text-sm mb-2 text-center font-semibold">Tipos de Dispositivo</h3>
-          <div class="h-[300px] w-full">
-            <canvas id="chartDevices" class="w-full h-full"></canvas>
-          </div>
-        </div>
-        <!-- Gráfico CVEs -->
-        <div class="bg-gray-900 p-4 rounded-lg shadow-md h-[350px]">
-          <h3 class="text-teal-300 text-sm mb-2 text-center font-semibold">CVEs Críticos</h3>
-          <div class="h-[300px] w-full">
-            <canvas id="chartCVEs" class="w-full h-full"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- RESULTADOS -->
     <div id="result" class="space-y-4 hidden"></div>
   </div>
@@ -58,7 +30,6 @@
     const btn = document.getElementById("scanBtn");
     const targetInput = document.getElementById("target");
     const resultDiv = document.getElementById("result");
-    const dashboardDiv = document.getElementById("dashboard");
 
     btn.addEventListener("click", () => {
       const target = targetInput.value.trim();
@@ -66,9 +37,9 @@
 
       btn.disabled = true;
       btn.textContent = "Analisando...";
+
       resultDiv.innerHTML = "";
       resultDiv.classList.add("hidden");
-      dashboardDiv.classList.add("hidden");
 
       fetch("/recon", {
         method: "POST",
@@ -78,7 +49,6 @@
         .then(res => res.json())
         .then(data => {
           console.log("Dados recebidos do backend:", data); // Debug para verificar os dados
-          renderCharts(data);
           renderResult(data);
         })
         .catch(err => {
@@ -90,71 +60,6 @@
           btn.textContent = "Iniciar Scan";
         });
     });
-
-    function renderCharts(data) {
-      const osMap = {}, typeMap = {}, cveMap = {};
-
-      data.forEach(h => {
-        const os = (h.os || "Desconhecido").split(" ")[0];
-        osMap[os] = (osMap[os] || 0) + 1;
-
-        const tipo = h.analysis?.tipo_dispositivo || "Outro";
-        typeMap[tipo] = (typeMap[tipo] || 0) + 1;
-
-        (h.analysis?.CVEs_criticos || []).forEach(cve => {
-          cveMap[cve.cve] = (cveMap[cve.cve] || 0) + 1;
-        });
-      });
-
-      new Chart(document.getElementById("chartOS"), {
-        type: "doughnut",
-        data: {
-          labels: Object.keys(osMap),
-          datasets: [{ data: Object.values(osMap), label: "Sistemas" }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { labels: { color: "#fff" } } }
-        }
-      });
-
-      new Chart(document.getElementById("chartDevices"), {
-        type: "bar",
-        data: {
-          labels: Object.keys(typeMap),
-          datasets: [{ data: Object.values(typeMap), label: "Dispositivos", backgroundColor: "#14b8a6" }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: "#ccc" } },
-            y: { ticks: { color: "#ccc" } }
-          }
-        }
-      });
-
-      new Chart(document.getElementById("chartCVEs"), {
-        type: "bar",
-        data: {
-          labels: Object.keys(cveMap),
-          datasets: [{ data: Object.values(cveMap), label: "CVEs", backgroundColor: "#f87171" }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: "#ccc" } },
-            y: { ticks: { color: "#ccc" } }
-          }
-        }
-      });
-
-      dashboardDiv.classList.remove("hidden");
-    }
 
     function renderResult(data) {
       resultDiv.innerHTML = "";
