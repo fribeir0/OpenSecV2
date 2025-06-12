@@ -49,7 +49,11 @@
         .then(res => res.json())
         .then(data => {
           console.log("Dados recebidos do backend:", data); // Debug para verificar os dados
-          renderResult(data);
+
+          // Extrai a string JSON do campo 'output' e converte para um objeto JSON
+          const jsonData = JSON.parse(data.output);
+
+          renderResult(jsonData);
         })
         .catch(err => {
           resultDiv.innerHTML = `<div class="text-red-400">Erro: ${err.message}</div>`;
@@ -69,36 +73,25 @@
         section.className = "bg-gray-800 p-4 rounded-lg";
         section.innerHTML = `
           <summary class="cursor-pointer font-semibold text-lg text-teal-400">
-            ${host.host} – OS: ${host.os || "Desconhecido"}
+            ${host.tipo_dispositivo} – Risco: ${host.risco_geral || "Desconhecido"}
           </summary>
           <div class="mt-2 text-sm text-gray-100 space-y-2">
-            <h4 class="font-semibold">Serviços e Portas</h4>
-            <ul class="list-disc list-inside space-y-1">
-              ${host.ports.map(port => {
-                const analysis = port.analysis || {};
-                return `
-                  <li>
-                    <strong>Porta ${port.port} (${port.service})</strong>: ${port.version || "Desconhecido"}<br>
-                    <strong>Protocolo:</strong> ${port.protocol || "Desconhecido"}<br>
-                    <strong>Tipo de Dispositivo:</strong> ${analysis.tipo_dispositivo || "Desconhecido"}<br>
-                    <strong>Risco Geral:</strong> ${analysis.risco_geral || "Desconhecido"}<br>
-                    <strong>Justificativa:</strong> ${analysis.justificativa || "Desconhecida"}<br>
-                    <strong>Insights:</strong> ${analysis.insights || "Nenhum insight identificado"}<br>
+            <p><strong>Justificativa:</strong> ${host.justificativa || "Desconhecida"}</p>
+            <p><strong>Insights:</strong> ${host.insights || "Nenhum insight identificado"}</p>
 
-                    <h4 class="mt-2 font-semibold">CVEs Críticos</h4>
-                    ${analysis.CVEs_criticos && analysis.CVEs_criticos.length > 0 ? `
-                      <ul class="list-disc list-inside text-red-400 space-y-1">
-                        ${analysis.CVEs_criticos.map(cve => `
-                          <li>
-                            <a href="${cve.link}" target="_blank" class="underline">${cve.cve}</a> – ${cve.descricao} (CVSS: ${cve.cvss})
-                          </li>
-                        `).join('')}
-                      </ul>
-                    ` : `<p class="text-gray-400 italic">Nenhuma CVE crítica identificada.</p>`}
-                  </li>
-                `;
-              }).join('')}
-            </ul>
+            <h4 class="mt-2 font-semibold">Serviço: ${host.service}</h4>
+
+            <h4 class="mt-2 font-semibold">CVEs Críticos</h4>
+            ${host.CVEs_criticos && host.CVEs_criticos.length > 0
+              ? `<ul class="list-disc list-inside text-red-400 space-y-1">
+                  ${host.CVEs_criticos.map(cve => `
+                    <li>
+                      <a href="${cve.link}" target="_blank" class="underline">${cve.cve}</a> – ${cve.descricao} (CVSS: ${cve.cvss})
+                    </li>
+                  `).join('')}
+                </ul>`
+              : `<p class="text-gray-400 italic">Nenhuma CVE crítica identificada.</p>`
+            }
           </div>
         `;
         resultDiv.appendChild(section);
